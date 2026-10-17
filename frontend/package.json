@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:android": "tsc -b && vite build && npx cap sync android",
+    "build": "vite build",
+    "build:tsc": "tsc -b && vite build",
+    "build:android": "vite build && npx cap sync android",
     "android:open": "npx cap open android",
     "lint": "oxlint",
     "preview": "vite preview"
