@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api, resolveMediaUrl } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { brandConfig } from '../config/brandConfig';
 import { SEOHead } from '../components/SEOHead';
@@ -32,7 +32,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
   const [headline, setHeadline] = useState(user?.headline || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [location, setLocation] = useState(user?.location || '');
-  const [avatarPreview, setAvatarPreview] = useState<string>(user?.avatar_url || brandConfig.sampleImages.defaultAvatar);
+  const [avatarPreview, setAvatarPreview] = useState<string>(resolveMediaUrl(user?.avatar_url) || brandConfig.sampleImages.defaultAvatar);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Step 2 Interests
@@ -189,6 +189,9 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({ onNavigate }) =>
                 <img
                   src={avatarPreview}
                   alt="Avatar preview"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                  }}
                   className="w-28 h-28 rounded-2xl object-cover ring-2 ring-gold-500/40 shadow-gold-glow"
                 />
                 <label className="absolute inset-0 bg-obsidian-950/60 rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity cursor-pointer">

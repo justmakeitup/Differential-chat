@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, ConnectionItem, ConnectionRequest } from '../services/api';
+import { api, ConnectionItem, ConnectionRequest, resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { brandConfig } from '../config/brandConfig';
@@ -186,8 +186,11 @@ export const ConnectionsPage: React.FC<ConnectionsPageProps> = ({ onNavigate }) 
                     className="flex items-start gap-3.5 text-left cursor-pointer group"
                   >
                     <img
-                      src={peer.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                      src={resolveMediaUrl(peer.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                       alt={peer.full_name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                      }}
                       className="w-12 h-12 rounded-xl object-cover ring-1 ring-gold-500/30 group-hover:ring-gold-400 transition-all shrink-0"
                     />
                     <div>
@@ -250,8 +253,11 @@ export const ConnectionsPage: React.FC<ConnectionsPageProps> = ({ onNavigate }) 
                 >
                   <div className="flex items-start gap-3.5">
                     <img
-                      src={req.requester?.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                      src={resolveMediaUrl(req.requester?.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                       alt={req.requester?.full_name || 'Requester'}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                      }}
                       className="w-12 h-12 rounded-xl object-cover ring-1 ring-gold-500/30 shrink-0"
                     />
                     <div>
@@ -309,8 +315,11 @@ export const ConnectionsPage: React.FC<ConnectionsPageProps> = ({ onNavigate }) 
                 >
                   <div className="flex items-center gap-3.5">
                     <img
-                      src={req.addressee?.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                      src={resolveMediaUrl(req.addressee?.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                       alt={req.addressee?.full_name || 'Member'}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                      }}
                       className="w-11 h-11 rounded-xl object-cover ring-1 ring-white/10 shrink-0"
                     />
                     <div>

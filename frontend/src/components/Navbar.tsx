@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { api, NotificationItem } from '../services/api';
+import { api, NotificationItem, resolveMediaUrl } from '../services/api';
 import { brandConfig } from '../config/brandConfig';
 import {
   Compass,
@@ -202,8 +202,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
                               }`}
                             >
                               <img
-                                src={n.actor?.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                                src={resolveMediaUrl(n.actor?.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                                 alt={n.actor?.full_name || 'Member'}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                                }}
                                 className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-white/10 shrink-0"
                               />
                               <div className="flex-1 min-w-0">
@@ -230,8 +233,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
                     className="flex items-center gap-2 p-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 shadow-sm dark:bg-obsidian-900/80 dark:hover:bg-obsidian-800 dark:border-white/10 dark:text-slate-200 transition-colors cursor-pointer"
                   >
                     <img
-                      src={user.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                      src={resolveMediaUrl(user.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                       alt={user.full_name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                      }}
                       className="w-7 h-7 rounded-lg object-cover ring-1 ring-gold-500/40"
                     />
                     <span className="hidden sm:block text-xs font-semibold text-slate-900 dark:text-slate-200 pr-2 max-w-[100px] truncate">

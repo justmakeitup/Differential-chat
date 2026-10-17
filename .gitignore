@@ -20,7 +20,10 @@ backend/instance/
 backend/aetheris.db
 
 # User uploads & media
-backend/uploads/
+backend/uploads/*
+!backend/uploads/*.webp
+!backend/uploads/thumbnails/
+!backend/uploads/thumbnails/*.webp
 !backend/uploads/.gitkeep
 
 # Node / Frontend

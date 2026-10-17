@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSignaling } from '../context/SignalingContext';
 import { useToast } from '../context/ToastContext';
-import { api, ConnectionItem } from '../services/api';
+import { api, ConnectionItem, resolveMediaUrl } from '../services/api';
 import { brandConfig } from '../config/brandConfig';
 import { SEOHead } from '../components/SEOHead';
 import {
@@ -376,8 +376,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
                   >
                     <div className="relative shrink-0">
                       <img
-                        src={conn.peer.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                        src={resolveMediaUrl(conn.peer.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                         alt={conn.peer.full_name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                        }}
                         className="w-11 h-11 rounded-xl object-cover ring-1 ring-white/10"
                       />
                       <div
@@ -417,8 +420,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
                   className="relative cursor-pointer hover:opacity-90"
                 >
                   <img
-                    src={selectedPeer.peer.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                    src={resolveMediaUrl(selectedPeer.peer.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                     alt={selectedPeer.peer.full_name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                    }}
                     className="w-10 h-10 rounded-xl object-cover ring-1 ring-gold-500/30"
                   />
                   <div
@@ -545,7 +551,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
                       {msg.type === 'image' && (
                         <div className="space-y-1.5">
                           <img
-                            src={msg.content}
+                            src={resolveMediaUrl(msg.content)}
                             alt={msg.altText || 'Encrypted image'}
                             className="rounded-xl max-h-60 w-full object-cover"
                           />

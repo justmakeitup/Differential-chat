@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, User, Post } from '../services/api';
+import { api, User, Post, resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { brandConfig } from '../config/brandConfig';
@@ -127,7 +127,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ username, onNavigate, 
       <SEOHead
         title={`${profile.full_name} (@${profile.username})`}
         description={profile.headline || profile.bio || `Explore curated photography by ${profile.full_name} on Differential.`}
-        image={profile.avatar_url || brandConfig.sampleImages.defaultAvatar}
+        image={resolveMediaUrl(profile.avatar_url) || brandConfig.sampleImages.defaultAvatar}
       />
 
       {/* Profile Header Card */}
@@ -135,8 +135,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ username, onNavigate, 
         {/* Banner */}
         <div className="h-48 sm:h-64 w-full relative bg-obsidian-950">
           <img
-            src={profile.banner_url || brandConfig.sampleImages.defaultBanner}
+            src={resolveMediaUrl(profile.banner_url) || brandConfig.sampleImages.defaultBanner}
             alt="Profile backdrop"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultBanner;
+            }}
             className="w-full h-full object-cover opacity-60"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-obsidian-900 via-obsidian-900/40 to-transparent" />
@@ -148,8 +151,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ username, onNavigate, 
             {/* Avatar */}
             <div className="relative">
               <img
-                src={profile.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                src={resolveMediaUrl(profile.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                 alt={profile.full_name}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                }}
                 className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover ring-4 ring-obsidian-900 shadow-2xl bg-obsidian-950"
               />
               {profile.is_verified && (
@@ -327,9 +333,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ username, onNavigate, 
                 className="group relative rounded-2xl overflow-hidden bg-obsidian-900 border border-white/10 cursor-pointer aspect-square shadow-xl transition-all hover:border-gold-500/40"
               >
                 <img
-                  src={post.image_url}
+                  src={resolveMediaUrl(post.image_url)}
                   alt={post.alt_text}
                   loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.curationSample1;
+                  }}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {/* Overlay hover */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, User } from '../services/api';
+import { api, User, resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { brandConfig } from '../config/brandConfig';
@@ -190,8 +190,11 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({ onNavigate }) => {
                     >
                       <div className="relative">
                         <img
-                          src={member.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                          src={resolveMediaUrl(member.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                           alt={member.full_name}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                          }}
                           className="w-14 h-14 rounded-2xl object-cover ring-2 ring-gold-500/30 group-hover:ring-gold-400 transition-all"
                         />
                         {member.is_verified && (
@@ -321,8 +324,11 @@ export const DiscoverPage: React.FC<DiscoverPageProps> = ({ onNavigate }) => {
           <div className="w-full max-w-md rounded-3xl bg-obsidian-900 border border-white/10 p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 pb-3 border-b border-white/10">
               <img
-                src={activeRequestUser.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                src={resolveMediaUrl(activeRequestUser.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                 alt={activeRequestUser.full_name}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                }}
                 className="w-10 h-10 rounded-xl object-cover ring-1 ring-gold-500/40"
               />
               <div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, Post, PostComment } from '../services/api';
+import { api, Post, PostComment, resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { brandConfig } from '../config/brandConfig';
@@ -214,7 +214,7 @@ export const PostDetailPage: React.FC<PostDetailPageProps> = ({
       <SEOHead
         title={post.caption ? `${post.caption.slice(0, 50)}...` : `Photograph by ${post.author?.full_name}`}
         description={post.alt_text}
-        image={post.image_url}
+        image={resolveMediaUrl(post.image_url)}
       />
 
       {/* Back button */}
@@ -232,8 +232,11 @@ export const PostDetailPage: React.FC<PostDetailPageProps> = ({
         {/* Left Column: Image Canvas */}
         <div className="lg:col-span-7 bg-obsidian-950 flex flex-col justify-center items-center p-4 sm:p-8 relative min-h-[450px]">
           <img
-            src={post.image_url}
+            src={resolveMediaUrl(post.image_url)}
             alt={post.alt_text}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.curationSample1;
+            }}
             className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
           />
 
@@ -261,8 +264,11 @@ export const PostDetailPage: React.FC<PostDetailPageProps> = ({
                 className="flex items-center gap-3 text-left cursor-pointer hover:opacity-90"
               >
                 <img
-                  src={post.author?.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                  src={resolveMediaUrl(post.author?.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                   alt={post.author?.full_name}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                  }}
                   className="w-11 h-11 rounded-xl object-cover ring-1 ring-gold-500/30"
                 />
                 <div>
@@ -355,8 +361,11 @@ export const PostDetailPage: React.FC<PostDetailPageProps> = ({
                           className="flex items-center gap-2 text-left cursor-pointer"
                         >
                           <img
-                            src={comment.author?.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                            src={resolveMediaUrl(comment.author?.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                             alt={comment.author?.full_name || 'Member'}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                            }}
                             className="w-5 h-5 rounded-md object-cover"
                           />
                           <span className="font-serif text-xs font-semibold text-white">

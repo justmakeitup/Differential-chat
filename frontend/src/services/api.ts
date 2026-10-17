@@ -145,6 +145,15 @@ export const getApiBaseUrl = (): string => {
   return 'https://differential-backend.onrender.com';
 };
 
+export const resolveMediaUrl = (url?: string | null): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const base = getApiBaseUrl();
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export const setCustomApiHost = (host: string) => {
   if (typeof window !== 'undefined') {
     if (host) {

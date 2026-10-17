@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, Post } from '../services/api';
+import { api, Post, resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { brandConfig } from '../config/brandConfig';
@@ -213,8 +213,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({
                   className="flex items-center gap-3 text-left hover:opacity-90 cursor-pointer"
                 >
                   <img
-                    src={post.author?.avatar_url || brandConfig.sampleImages.defaultAvatar}
+                    src={resolveMediaUrl(post.author?.avatar_url) || brandConfig.sampleImages.defaultAvatar}
                     alt={post.author?.full_name || 'Author'}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
+                    }}
                     className="w-10 h-10 rounded-xl object-cover ring-1 ring-gold-500/30"
                   />
                   <div>
@@ -252,9 +255,12 @@ export const FeedPage: React.FC<FeedPageProps> = ({
               {/* The Curated Image */}
               <div className="relative bg-obsidian-950 overflow-hidden flex items-center justify-center">
                 <img
-                  src={post.image_url}
+                  src={resolveMediaUrl(post.image_url)}
                   alt={post.alt_text}
                   loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.curationSample1;
+                  }}
                   className="w-full max-h-[650px] object-contain hover:scale-[1.01] transition-transform duration-500"
                 />
               </div>
