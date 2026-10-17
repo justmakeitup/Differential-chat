@@ -1,0 +1,35 @@
+# Environment variables (CRITICAL: Never commit database credentials)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/*/__pycache__/
+backend/instance/
+*.pyc
+*.pyo
+*.pyd
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+backend/aetheris.db
+
+# User uploads & media
+backend/uploads/
+!backend/uploads/.gitkeep
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <!-- Primary Metadata -->
+    <title>Differential — Sovereign Sanctuary for Meaningful Connection</title>
+    <meta name="description" content="A peer-to-peer, zero-knowledge network crafted for discerning minds, curated imagery, and end-to-end encrypted dialogues. Meet your next meaningful connection." />
+    <meta name="theme-color" content="#060709" />
+    
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Differential" />
+    <meta property="og:title" content="Differential — Meet your next meaningful connection." />
+    <meta property="og:description" content="A peer-to-peer, zero-knowledge social network crafted for discerning minds, curated imagery, and end-to-end encrypted dialogues." />
+    <meta property="og:image" content="/og-image.svg" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Differential — Sovereign Connection Network" />
+    <meta name="twitter:description" content="A peer-to-peer, zero-knowledge social network crafted for discerning minds, curated imagery, and end-to-end encrypted dialogues." />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('aetheris_theme');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          }
+        } catch(e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Differential</string>
+    <string name="title_activity_main">Differential</string>
+    <string name="package_name">com.differential.chat</string>
+    <string name="custom_url_scheme">com.differential.chat</string>
+</resources>
