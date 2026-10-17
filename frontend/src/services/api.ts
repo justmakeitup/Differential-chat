@@ -137,14 +137,12 @@ export const getApiBaseUrl = (): string => {
       return (import.meta.env.VITE_API_URL as string).replace(/\/$/, '');
     }
 
-    // In Capacitor native Android environment, window.location.origin is https://localhost
-    // If running on device or emulator, backend can be configured or defaulted
+    // In Capacitor native Android environment, default directly to live Render backend
     if (window.location.protocol === 'https:' && window.location.hostname === 'localhost' && window.location.port === '') {
-      // Capacitor android WebView default origin
-      return 'http://10.0.2.2:5000'; // Standard Android emulator localhost host
+      return 'https://differential-backend.onrender.com';
     }
   }
-  return '';
+  return 'https://differential-backend.onrender.com';
 };
 
 export const setCustomApiHost = (host: string) => {
