@@ -156,7 +156,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ username, onNavigate, 
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
                 }}
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover ring-4 ring-obsidian-900 shadow-2xl bg-obsidian-950"
+                className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover ring-4 ring-obsidian-900 shadow-2xl bg-obsidian-950 shrink-0 aspect-square"
               />
               {profile.is_verified && (
                 <div

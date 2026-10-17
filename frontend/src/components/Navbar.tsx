@@ -136,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
           )}
 
           {/* Right Header Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {user ? (
               <>
                 {/* Publish Image CTA */}
@@ -150,18 +150,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
                   </button>
                 )}
 
-                {/* Theme Mode Toggle */}
-                <ThemeToggle />
+                {/* Theme Mode Toggle (Desktop only - mobile uses Appearance in drawer/settings) */}
+                <ThemeToggle className="hidden md:inline-flex" />
 
                 {/* Notifications Bell */}
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     onClick={() => {
                       setNotificationsOpen(!notificationsOpen);
                       setProfileDropdownOpen(false);
                     }}
                     aria-label={`Notifications, ${unreadCount} unread`}
-                    className="relative p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-sm dark:bg-obsidian-900/80 dark:hover:bg-obsidian-800 dark:border-white/10 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
+                    className="relative p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-sm dark:bg-obsidian-900/80 dark:hover:bg-obsidian-800 dark:border-white/10 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer shrink-0"
                   >
                     <Bell className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                     {unreadCount > 0 && (
@@ -224,13 +224,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
                 </div>
 
                 {/* Profile Dropdown */}
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     onClick={() => {
                       setProfileDropdownOpen(!profileDropdownOpen);
                       setNotificationsOpen(false);
                     }}
-                    className="flex items-center gap-2 p-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 shadow-sm dark:bg-obsidian-900/80 dark:hover:bg-obsidian-800 dark:border-white/10 dark:text-slate-200 transition-colors cursor-pointer"
+                    aria-label="Profile menu"
+                    className="flex items-center gap-2 p-1 sm:p-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 shadow-sm dark:bg-obsidian-900/80 dark:hover:bg-obsidian-800 dark:border-white/10 dark:text-slate-200 transition-colors cursor-pointer shrink-0"
                   >
                     <img
                       src={resolveMediaUrl(user.avatar_url) || brandConfig.sampleImages.defaultAvatar}
@@ -238,7 +239,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
                       }}
-                      className="w-7 h-7 rounded-lg object-cover ring-1 ring-gold-500/40"
+                      className="w-8 h-8 rounded-lg object-cover ring-1 ring-gold-500/40 shrink-0 aspect-square min-w-[32px] min-h-[32px]"
                     />
                     <span className="hidden sm:block text-xs font-semibold text-slate-900 dark:text-slate-200 pr-2 max-w-[100px] truncate">
                       {user.full_name.split(' ')[0]}
@@ -302,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-label="Toggle navigation menu"
-                  className="md:hidden p-2 rounded-xl bg-obsidian-900 border border-white/10 text-slate-300 hover:text-white cursor-pointer"
+                  className="md:hidden p-2 rounded-xl bg-obsidian-900 border border-white/10 text-slate-300 hover:text-white cursor-pointer shrink-0"
                 >
                   {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
@@ -310,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
             ) : (
               /* Guest Navigation */
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <ThemeToggle />
+                <ThemeToggle className="hidden md:inline-flex" />
                 <button
                   onClick={() => onNavigate('/login')}
                   className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"

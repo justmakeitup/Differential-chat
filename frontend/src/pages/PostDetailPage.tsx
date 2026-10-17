@@ -269,7 +269,7 @@ export const PostDetailPage: React.FC<PostDetailPageProps> = ({
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
                   }}
-                  className="w-11 h-11 rounded-xl object-cover ring-1 ring-gold-500/30"
+                  className="w-11 h-11 rounded-xl object-cover ring-1 ring-gold-500/30 shrink-0 aspect-square min-w-[44px] min-h-[44px]"
                 />
                 <div>
                   <div className="flex items-center gap-1.5">

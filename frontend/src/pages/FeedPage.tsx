@@ -218,7 +218,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = brandConfig.sampleImages.defaultAvatar;
                     }}
-                    className="w-10 h-10 rounded-xl object-cover ring-1 ring-gold-500/30"
+                    className="w-10 h-10 rounded-xl object-cover ring-1 ring-gold-500/30 shrink-0 aspect-square min-w-[40px] min-h-[40px]"
                   />
                   <div>
                     <div className="flex items-center gap-1.5">
