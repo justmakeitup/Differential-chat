@@ -1,6 +1,6 @@
 import React from 'react';
 import { brandConfig } from '../config/brandConfig';
-import { ShieldCheck, Mail, MapPin, Lock, Terminal } from 'lucide-react';
+import { ShieldCheck, Mail, MapPin, Lock, Terminal, Smartphone, Download } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -127,11 +127,50 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 Membership Sanctuary Acknowledgments
               </button>
             </li>
+            <li className="pt-1">
+              <a
+                href="/Differential-Chat.apk"
+                download="Differential-Chat.apk"
+                className="text-gold-400 hover:text-gold-300 font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Download Android App</span>
+              </a>
+            </li>
           </ul>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-editorial-muted">
+      {/* Android Mobile Edition Banner */}
+      <div className="max-w-7xl mx-auto mt-12 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-obsidian-900/90 via-obsidian-900/60 to-obsidian-900/90 border border-gold-500/20 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
+        <div className="flex items-center gap-4 text-left w-full md:w-auto">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold-500/20 to-gold-600/30 border border-gold-500/40 flex items-center justify-center text-gold-400 shrink-0 shadow-gold-glow">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-serif text-sm sm:text-base font-semibold text-white">Differential for Android</h4>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                v1.1.0 Standalone APK
+              </span>
+            </div>
+            <p className="text-xs text-editorial-subtle mt-0.5 max-w-xl">
+              Install the sovereign mobile edition directly on your phone. Direct E2EE WebRTC dialogues, curated exhibition feed, and biometric privacy.
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="/Differential-Chat.apk"
+          download="Differential-Chat.apk"
+          className="w-full md:w-auto flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl text-xs font-semibold bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-obsidian-950 shadow-gold-glow transition-all whitespace-nowrap shrink-0 group cursor-pointer"
+        >
+          <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+          <span>Download Android App</span>
+        </a>
+      </div>
+
+      <div className="max-w-7xl mx-auto mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-editorial-muted">
         <p>© {new Date().getFullYear()} {brandConfig.name}. An independent privacy-first social connection network.</p>
         <p className="mt-2 sm:mt-0 font-mono">
           Strictly image-only • No algorithmic engagement loops
