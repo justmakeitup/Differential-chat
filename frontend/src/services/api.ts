@@ -93,10 +93,22 @@ export interface NotificationItem {
     full_name: string;
     avatar_url: string;
   };
-  type: 'connection_request' | 'connection_accepted' | 'post_like' | 'post_comment';
+  type: 'connection_request' | 'connection_accepted' | 'post_like' | 'post_comment' | 'post_created' | 'chat_message' | string;
   entity_id: string;
   message: string;
   is_read: boolean;
+  created_at: string;
+}
+
+export interface EncryptedMessageEnvelope {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  ciphertext: string;
+  iv: string;
+  key_fingerprint: string;
+  message_type: 'text' | 'image' | 'file' | string;
+  is_delivered: boolean;
   created_at: string;
 }
 
@@ -385,6 +397,27 @@ export const api = {
 
   markOneNotificationRead: (id: string) =>
     request<{ message: string }>(`/api/notifications/${id}/read`, { method: 'POST' }),
+
+  // Encrypted Store-and-Forward Chat
+  sendEncryptedMessage: (data: {
+    recipient_id: string;
+    ciphertext: string;
+    iv: string;
+    key_fingerprint?: string;
+    message_type?: string;
+  }) => request<{ message: string; data: EncryptedMessageEnvelope }>('/api/chat/messages', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+
+  getEncryptedHistory: (peerId: string) =>
+    request<{ peer_id: string; messages: EncryptedMessageEnvelope[] }>(`/api/chat/messages/${peerId}`),
+
+  getPendingMessages: () =>
+    request<{ total_pending: number; messages: EncryptedMessageEnvelope[] }>('/api/chat/pending'),
+
+  markMessageDelivered: (messageId: string) =>
+    request<{ message: string }>(`/api/chat/messages/${messageId}/delivered`, { method: 'POST' }),
 
   // System Config
   getSystemConfig: () =>

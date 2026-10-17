@@ -11,6 +11,13 @@ import {
   PeerConnectionState
 } from '../services/webrtc';
 import {
+  getOrCreateIdentityKeyPair,
+  deriveSessionKeyFromPublicKey,
+  encryptPayload,
+  decryptPayload
+} from '../services/crypto';
+import { EncryptedMessageEnvelope } from '../services/api';
+import {
   ShieldCheck,
   Lock,
   Send,
@@ -95,6 +102,70 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
     return () => clearInterval(interval);
   }, [connections, signalingConnected]);
 
+  // In-memory cache of derived CryptoKeys per peer public key
+  const peerSessionKeyRef = useRef<Map<string, CryptoKey>>(new Map());
+
+  const getOrDeriveSessionKey = async (peerPublicKey?: string): Promise<CryptoKey | null> => {
+    if (!peerPublicKey || !user) return null;
+    if (peerSessionKeyRef.current.has(peerPublicKey)) {
+      return peerSessionKeyRef.current.get(peerPublicKey)!;
+    }
+    try {
+      const myIdentity = await getOrCreateIdentityKeyPair();
+      if (!myIdentity.keyPair?.privateKey) return null;
+      const key = await deriveSessionKeyFromPublicKey(myIdentity.keyPair.privateKey, peerPublicKey);
+      if (key) {
+        peerSessionKeyRef.current.set(peerPublicKey, key);
+      }
+      return key;
+    } catch (err) {
+      console.warn("[Chat] Session key derivation error:", err);
+      return null;
+    }
+  };
+
+  const decryptEnvelopeToChatMessage = async (
+    env: EncryptedMessageEnvelope,
+    sessionKey: CryptoKey | null
+  ): Promise<ChatMessage | null> => {
+    try {
+      const decrypted = await decryptPayload({
+        ciphertext: env.ciphertext,
+        iv: env.iv,
+        timestamp: new Date(env.created_at).getTime()
+      }, sessionKey);
+
+      const isMe = env.sender_id === user?.id;
+      const senderName = isMe ? (user?.full_name || 'Me') : (selectedPeer?.peer.full_name || 'Peer');
+
+      if (decrypted && typeof decrypted === 'object' && decrypted.content !== undefined) {
+        return {
+          id: env.id,
+          senderId: env.sender_id,
+          senderName,
+          type: (decrypted.type || env.message_type || 'text') as any,
+          content: decrypted.content,
+          altText: decrypted.altText,
+          timestamp: new Date(env.created_at).getTime(),
+          status: env.is_delivered ? 'delivered' : 'sent'
+        };
+      }
+
+      return {
+        id: env.id,
+        senderId: env.sender_id,
+        senderName,
+        type: (env.message_type || 'text') as any,
+        content: typeof decrypted === 'string' ? decrypted : JSON.stringify(decrypted),
+        timestamp: new Date(env.created_at).getTime(),
+        status: env.is_delivered ? 'delivered' : 'sent'
+      };
+    } catch (err) {
+      console.warn("[Chat] Failed to decrypt envelope:", env.id, err);
+      return null;
+    }
+  };
+
   // Load chat messages for the selected peer from client localStorage (zero-knowledge local cache)
   useEffect(() => {
     if (!selectedPeer || !user) return;
@@ -114,7 +185,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
           senderId: 'system',
           senderName: 'Differential Protocol',
           type: 'text',
-          content: '🔒 Zero-Knowledge Channel Established. All transmissions are point-to-point encrypted via WebRTC data channels and Web Crypto AES-GCM-256.',
+          content: '🔒 Zero-Knowledge Channel Established. All transmissions are point-to-point encrypted via WebCrypto AES-GCM-256 and WebRTC data channels.',
           timestamp: Date.now(),
           status: 'delivered'
         }
@@ -122,12 +193,106 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
     }
   }, [selectedPeer, user]);
 
+  // Synchronize historical zero-knowledge encrypted envelopes from server
+  useEffect(() => {
+    if (!selectedPeer || !user) return;
+    let isMounted = true;
+
+    const syncHistory = async () => {
+      try {
+        const res = await api.getEncryptedHistory(selectedPeer.peer.id);
+        if (!isMounted || !res.messages || res.messages.length === 0) return;
+
+        const sessionKey = await getOrDeriveSessionKey(selectedPeer.peer.e2ee_public_key);
+        const decryptedList: ChatMessage[] = [];
+
+        for (const env of res.messages) {
+          const msg = await decryptEnvelopeToChatMessage(env, sessionKey);
+          if (msg) decryptedList.push(msg);
+        }
+
+        if (!isMounted) return;
+
+        setMessages((prev) => {
+          const map = new Map<string, ChatMessage>();
+          prev.forEach((m) => map.set(m.id, m));
+          decryptedList.forEach((m) => map.set(m.id, m));
+          return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
+        });
+      } catch (err) {
+        console.warn("[Chat] Encrypted history sync warning:", err);
+      }
+    };
+
+    syncHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedPeer, user]);
+
+  // Real-time socket event listeners for offline queue delivery & receipts
+  useEffect(() => {
+    if (!socket || !selectedPeer || !user) return;
+
+    const handleEncryptedMessage = async (data: { message: EncryptedMessageEnvelope; sender: any }) => {
+      if (data?.message && data.message.sender_id === selectedPeer.peer.id) {
+        const sessionKey = await getOrDeriveSessionKey(selectedPeer.peer.e2ee_public_key);
+        const decrypted = await decryptEnvelopeToChatMessage(data.message, sessionKey);
+        if (decrypted) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === decrypted.id)) return prev;
+            return [...prev, decrypted];
+          });
+          api.markMessageDelivered(data.message.id).catch(() => {});
+        }
+      }
+    };
+
+    const handleDeliveryReceipt = (data: { peer_id: string; message_ids: string[]; status: 'delivered' | 'read' }) => {
+      if (data?.peer_id === selectedPeer.peer.id && Array.isArray(data.message_ids)) {
+        const idSet = new Set(data.message_ids);
+        setMessages((prev) =>
+          prev.map((m) => (idSet.has(m.id) ? { ...m, status: data.status } : m))
+        );
+      }
+    };
+
+    const handleOfflineAvailable = () => {
+      api.getEncryptedHistory(selectedPeer.peer.id).then(async (res) => {
+        if (!res.messages) return;
+        const sessionKey = await getOrDeriveSessionKey(selectedPeer.peer.e2ee_public_key);
+        const decryptedList: ChatMessage[] = [];
+        for (const env of res.messages) {
+          const msg = await decryptEnvelopeToChatMessage(env, sessionKey);
+          if (msg) decryptedList.push(msg);
+        }
+        setMessages((prev) => {
+          const map = new Map<string, ChatMessage>();
+          prev.forEach((m) => map.set(m.id, m));
+          decryptedList.forEach((m) => map.set(m.id, m));
+          return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
+        });
+      }).catch(() => {});
+    };
+
+    socket.on('encrypted_message_received', handleEncryptedMessage);
+    socket.on('message_delivery_receipt', handleDeliveryReceipt);
+    socket.on('offline_messages_available', handleOfflineAvailable);
+
+    return () => {
+      socket.off('encrypted_message_received', handleEncryptedMessage);
+      socket.off('message_delivery_receipt', handleDeliveryReceipt);
+      socket.off('offline_messages_available', handleOfflineAvailable);
+    };
+  }, [socket, selectedPeer, user]);
+
   // Save messages to local browser storage whenever they change
   useEffect(() => {
     if (!selectedPeer || !user || messages.length === 0) return;
     const storageKey = `aetheris_chat_${user.id}_${selectedPeer.peer.id}`;
     try {
-      localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50)));
+      localStorage.setItem(storageKey, JSON.stringify(messages.slice(-60)));
     } catch (err) {
       console.warn("Local storage quota limit reached for chat history:", err);
     }
@@ -158,7 +323,12 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
           setConnectionState(newState);
         },
         onMessage: (incomingMsg) => {
-          setMessages((prev) => [...prev, incomingMsg]);
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === incomingMsg.id || (m.timestamp === incomingMsg.timestamp && m.content === incomingMsg.content))) {
+              return prev;
+            }
+            return [...prev, incomingMsg];
+          });
         },
         onTyping: (isTyping) => {
           setIsPeerTyping(isTyping);
@@ -191,6 +361,84 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
     }
   };
 
+  /**
+   * Unified secure message dispatcher:
+   * 1. Updates UI optimistically with 'sending' status
+   * 2. Attempts direct WebRTC DataChannel send if peer is currently connected
+   * 3. Always stores the zero-knowledge encrypted envelope via store-and-forward backend
+   * 4. Updates status to 'sent' or 'delivered' when confirmed
+   */
+  const dispatchSecureMessage = async (
+    content: string,
+    type: 'text' | 'sticker' | 'image' = 'text',
+    altText?: string
+  ) => {
+    if (!selectedPeer || !user) return;
+
+    const tempId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const localMsg: ChatMessage = {
+      id: tempId,
+      senderId: user.id,
+      senderName: user.full_name,
+      type,
+      content,
+      altText,
+      timestamp: Date.now(),
+      status: 'sending'
+    };
+
+    setMessages((prev) => [...prev, localMsg]);
+
+    // Send over WebRTC if channel is live
+    if (rtcConnectionRef.current) {
+      try {
+        rtcConnectionRef.current.sendTyping(false);
+        await rtcConnectionRef.current.sendMessage(content, type, altText);
+      } catch {
+        // fallback to store-and-forward
+      }
+    }
+
+    // Persist via Zero-Knowledge Store-and-Forward
+    try {
+      const sessionKey = await getOrDeriveSessionKey(selectedPeer.peer.e2ee_public_key);
+      const enc = await encryptPayload({
+        id: tempId,
+        senderId: user.id,
+        type,
+        content,
+        altText,
+        timestamp: Date.now()
+      }, sessionKey);
+
+      const res = await api.sendEncryptedMessage({
+        recipient_id: selectedPeer.peer.id,
+        ciphertext: enc.ciphertext,
+        iv: enc.iv,
+        message_type: type
+      });
+
+      if (res && res.data) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? {
+                  ...m,
+                  id: res.data.id,
+                  status: res.data.is_delivered ? 'delivered' : 'sent'
+                }
+              : m
+          )
+        );
+      }
+    } catch (err) {
+      console.warn("[Chat] Store-and-forward queue note:", err);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...m, status: 'sent' } : m))
+      );
+    }
+  };
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const content = inputText.trim();
@@ -200,29 +448,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
     setShowEmojiPicker(false);
     setShowStickerDrawer(false);
 
-    if (rtcConnectionRef.current) {
-      rtcConnectionRef.current.sendTyping(false);
-      const sentMsg = await rtcConnectionRef.current.sendMessage(content, 'text');
-      if (sentMsg) {
-        setMessages((prev) => [...prev, sentMsg]);
-      }
-    }
+    await dispatchSecureMessage(content, 'text');
   };
 
   const handleSendSticker = async (stickerEmoji: string, stickerTitle: string) => {
     if (!selectedPeer || !user) return;
     setShowStickerDrawer(false);
-
-    if (rtcConnectionRef.current) {
-      const sentMsg = await rtcConnectionRef.current.sendMessage(
-        stickerEmoji,
-        'sticker',
-        stickerTitle
-      );
-      if (sentMsg) {
-        setMessages((prev) => [...prev, sentMsg]);
-      }
-    }
+    await dispatchSecureMessage(stickerEmoji, 'sticker', stickerTitle);
   };
 
   // Client-side visual image optimization before E2EE encryption
@@ -288,16 +520,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
 
     try {
       const compressedDataUrl = await compressImageToDataUrl(file, 1280, 0.82);
-      if (rtcConnectionRef.current) {
-        const sentMsg = await rtcConnectionRef.current.sendMessage(
-          compressedDataUrl,
-          'image',
-          `Encrypted photograph from ${user?.full_name}`
-        );
-        if (sentMsg) {
-          setMessages((prev) => [...prev, sentMsg]);
-        }
-      }
+      await dispatchSecureMessage(
+        compressedDataUrl,
+        'image',
+        `Encrypted photograph from ${user?.full_name}`
+      );
     } catch (err) {
       console.error("Image transfer error:", err);
       addToast({
@@ -329,7 +556,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ initialPeerId, onNavigate })
   const isPeerOnline = selectedPeer ? onlineUsers.has(selectedPeer.peer.id) : false;
 
   return (
-    <div className="pt-16 sm:pt-24 pb-20 md:pb-8 px-2 sm:px-6 max-w-7xl mx-auto h-[calc(100dvh-1rem)] md:h-[calc(100vh-2rem)] flex flex-col">
+    <div className="pt-16 sm:pt-24 pb-2 md:pb-8 px-2 sm:px-6 max-w-7xl mx-auto h-[calc(100dvh-1rem)] md:h-[calc(100vh-2rem)] flex flex-col">
       <SEOHead
         title="Encrypted P2P Communications"
         description="End-to-end encrypted direct peer-to-peer dialogues. Zero central logging, zero metadata retention."

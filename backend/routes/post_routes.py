@@ -85,6 +85,32 @@ def create_post():
     db.session.add(post)
     db.session.commit()
 
+    # Notify confirmed peers about the new photograph (public or connections-only)
+    try:
+        from signaling import socketio
+        connections = Connection.query.filter(
+            ((Connection.requester_id == g.current_user.id) | (Connection.addressee_id == g.current_user.id)) &
+            (Connection.status == 'accepted')
+        ).all()
+
+        for conn in connections:
+            peer_id = conn.addressee_id if conn.requester_id == g.current_user.id else conn.requester_id
+            scope_desc = "a connections-only photograph" if privacy_level == 'connections_only' else "a new photograph"
+            notif = Notification(
+                user_id=peer_id,
+                actor_id=g.current_user.id,
+                type='post_created',
+                entity_id=post.id,
+                message=f"{g.current_user.full_name} published {scope_desc}."
+            )
+            db.session.add(notif)
+            db.session.flush()
+            socketio.emit('notification_received', notif.to_dict(), room=f"user_{peer_id}")
+
+        db.session.commit()
+    except Exception as e:
+        print("[Notification Error on post create]:", e)
+
     return jsonify({
         'message': 'Image post published.',
         'post': post.to_dict(current_user_id=g.current_user.id)

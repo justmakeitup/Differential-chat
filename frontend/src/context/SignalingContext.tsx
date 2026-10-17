@@ -3,6 +3,8 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { getApiBaseUrl, getAuthToken } from '../services/api';
 
+import { requestNotificationPermissions, sendSystemNotification } from '../services/notifications';
+
 interface SignalingContextType {
   socket: Socket | null;
   isConnected: boolean;
@@ -17,6 +19,13 @@ export const SignalingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+
+  // Request notifications permission on login / startup
+  useEffect(() => {
+    if (user) {
+      requestNotificationPermissions().catch(() => {});
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -76,6 +85,52 @@ export const SignalingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
         return next;
       });
+    });
+
+    // In-app & System Notifications (Posts, Connections, Likes, Comments)
+    socketInstance.on('notification_received', (data: any) => {
+      if (data && data.message) {
+        let title = 'Differential Notification';
+        if (data.type === 'post_created') {
+          title = `${data.actor?.full_name || 'Connection'} posted a new photo`;
+        } else if (data.type === 'connection_request') {
+          title = 'New Connection Request';
+        } else if (data.type === 'connection_accepted') {
+          title = 'Connection Request Accepted';
+        } else if (data.type === 'post_like') {
+          title = 'Post Interaction';
+        } else if (data.type === 'post_comment') {
+          title = 'New Comment';
+        }
+
+        sendSystemNotification({
+          title,
+          body: data.message,
+          url: data.type === 'post_created' ? '/feed' : '/notifications'
+        });
+      }
+    });
+
+    // Encrypted Chat System Notification
+    socketInstance.on('encrypted_message_received', (data: any) => {
+      const senderName = data?.sender?.full_name || 'A contact';
+      // If user isn't focused or is in another screen, show system notification
+      sendSystemNotification({
+        title: `${senderName}`,
+        body: 'Sent you an encrypted message',
+        url: '/chat'
+      });
+    });
+
+    // Offline Messages Available Alert on Reconnect
+    socketInstance.on('offline_messages_available', (data: { count: number }) => {
+      if (data && data.count > 0) {
+        sendSystemNotification({
+          title: 'Encrypted Transmissions Received',
+          body: `You received ${data.count} secure message(s) while offline.`,
+          url: '/chat'
+        });
+      }
     });
 
     setSocket(socketInstance);

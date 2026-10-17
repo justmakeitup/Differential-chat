@@ -50,6 +50,15 @@ def handle_connect(auth):
     emit('presence_status', {uid: True for uid in active_user_sockets.keys()})
     emit('presence_update', {'user_id': user_id, 'online': True}, broadcast=True)
 
+    # Signal presence of pending offline encrypted messages awaiting local delivery
+    try:
+        from models import EncryptedMessage
+        pending_count = EncryptedMessage.query.filter_by(recipient_id=user_id, is_delivered=False).count()
+        if pending_count > 0:
+            emit('offline_messages_available', {'count': pending_count})
+    except Exception as e:
+        print("[Signaling pending check error]:", e)
+
 @socketio.on('disconnect')
 def handle_disconnect():
     sid = request.sid

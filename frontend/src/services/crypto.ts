@@ -289,6 +289,68 @@ export async function deriveSessionKey(
 }
 
 /**
+ * Derives a shared AES-GCM 256-bit key from own private key and peer's public key (SPKI base64 or JWK)
+ * Enables zero-knowledge offline message encryption without needing an active WebRTC session.
+ */
+export async function deriveSessionKeyFromPublicKey(
+  ownPrivateKey: CryptoKey | null,
+  peerPublicKey: string | JsonWebKey | null | undefined
+): Promise<CryptoKey | null> {
+  const subtle = getSubtle();
+  if (!subtle || !ownPrivateKey || !peerPublicKey) return null;
+
+  try {
+    let importedPeerKey: CryptoKey;
+    if (typeof peerPublicKey === 'string') {
+      const trimmed = peerPublicKey.trim();
+      if (trimmed.startsWith('{')) {
+        importedPeerKey = await subtle.importKey(
+          'jwk',
+          JSON.parse(trimmed),
+          { name: 'ECDH', namedCurve: 'P-256' },
+          true,
+          []
+        );
+      } else {
+        const spkiBuf = base64ToBuffer(trimmed);
+        importedPeerKey = await subtle.importKey(
+          'spki',
+          spkiBuf,
+          { name: 'ECDH', namedCurve: 'P-256' },
+          true,
+          []
+        );
+      }
+    } else {
+      importedPeerKey = await subtle.importKey(
+        'jwk',
+        peerPublicKey,
+        { name: 'ECDH', namedCurve: 'P-256' },
+        true,
+        []
+      );
+    }
+
+    return await subtle.deriveKey(
+      {
+        name: 'ECDH',
+        public: importedPeerKey
+      },
+      ownPrivateKey,
+      {
+        name: 'AES-GCM',
+        length: 256
+      },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  } catch (err) {
+    console.warn("[Crypto] Failed to derive session key from public key:", err);
+    return null;
+  }
+}
+
+/**
  * Encrypts an arbitrary object/string with AES-GCM and fresh 96-bit IV
  */
 export async function encryptPayload(data: any, sharedKey: CryptoKey | null): Promise<EncryptedPayload> {

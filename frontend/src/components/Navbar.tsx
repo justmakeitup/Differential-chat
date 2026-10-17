@@ -385,8 +385,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, onNavigate, onOpenC
         </div>
       )}
 
-      {/* Mobile Bottom Sticky Bar for rapid navigation */}
-      {user && (
+      {/* Mobile Bottom Sticky Bar for rapid navigation (hidden on /chat so composer has full viewport) */}
+      {user && currentPath !== '/chat' && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-obsidian-950/90 backdrop-blur-xl border-t border-white/10 px-4 py-2 flex items-center justify-around">
           {navLinks.map((link) => {
             const Icon = link.icon;
